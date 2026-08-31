@@ -658,6 +658,8 @@ export interface ProjectEntry {
   defaultModel?: string;
   /** Variant of `defaultModel`, when that model exposes any. */
   defaultVariant?: string;
+  /** Default agent for new chats in this project. Falls back to the global default agent when unset. */
+  defaultAgent?: string;
   addedAt?: number;
   lastOpenedAt?: number;
   sidebarCollapsed?: boolean;

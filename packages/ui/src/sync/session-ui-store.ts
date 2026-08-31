@@ -1200,6 +1200,7 @@ export const useSessionUIStore = create<SessionUIState>()((set, get) => ({
       useConfigStore.getState().applyDefaultModelAgentSelection({
         projectDefaultModel: selectedProject?.defaultModel,
         projectDefaultVariant: selectedProject?.defaultVariant,
+        projectDefaultAgent: selectedProject?.defaultAgent,
       })
     })
 

@@ -3,6 +3,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/icon/Icon';
 import { ModelSelector } from '@/components/sections/agents/ModelSelector';
+import { AgentSelector } from '@/components/sections/commands/AgentSelector';
+import { isPrimaryMode } from '@/components/chat/mobileControlsUtils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   SettingsFieldRow,
@@ -49,6 +51,8 @@ export const ProjectIdentityFields: React.FC<ProjectIdentityFieldsProps> = ({ fo
     defaultVariant,
     handleDefaultModelChange,
     handleDefaultVariantChange,
+    defaultAgent,
+    setDefaultAgent,
     isUploadingIcon,
     isRemovingCustomIcon,
     isDiscoveringIcon,
@@ -104,6 +108,18 @@ export const ProjectIdentityFields: React.FC<ProjectIdentityFieldsProps> = ({ fo
         info={t('settings.projects.page.section.chatDefaultsDescription')}
         contentClassName="space-y-0"
       >
+        <SettingsFieldRow
+          settingsItem="projects.default-agent"
+          label={t('settings.projects.page.field.projectAgent')}
+        >
+          <AgentSelector
+            agentName={defaultAgent ?? ''}
+            onChange={setDefaultAgent}
+            filter={(agent) => isPrimaryMode(agent.mode)}
+            className={SETTINGS_CUSTOM_TRIGGER_CLASS}
+          />
+        </SettingsFieldRow>
+
         <SettingsFieldRow
           settingsItem="projects.default-model"
           label={t('settings.projects.page.field.projectModel')}

@@ -63,6 +63,7 @@ interface ProjectsStore {
     iconBackground?: string | null;
     defaultModel?: string | null;
     defaultVariant?: string | null;
+    defaultAgent?: string | null;
   }) => void;
   uploadProjectIcon: (id: string, file: File) => Promise<{ ok: boolean; error?: string }>;
   removeProjectIcon: (id: string) => Promise<{ ok: boolean; error?: string }>;
@@ -137,6 +138,17 @@ const normalizeDefaultModel = (value: unknown): string | undefined => {
   }
   const separatorIndex = trimmed.indexOf('/');
   if (separatorIndex <= 0 || separatorIndex >= trimmed.length - 1) {
+    return undefined;
+  }
+  return trimmed;
+};
+
+const normalizeDefaultAgent = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
     return undefined;
   }
   return trimmed;
@@ -305,6 +317,10 @@ const sanitizeProjects = (value: unknown): ProjectEntry[] => {
       if (typeof candidate.defaultVariant === 'string' && candidate.defaultVariant.trim().length > 0) {
         project.defaultVariant = candidate.defaultVariant.trim();
       }
+    }
+    const defaultAgent = normalizeDefaultAgent(candidate.defaultAgent);
+    if (defaultAgent) {
+      project.defaultAgent = defaultAgent;
     }
     if (candidate.iconBackground === null) {
       project.iconBackground = null;
@@ -539,6 +555,7 @@ const vscodeWorkspaceProjectsEqual = (left: ProjectEntry[], right: ProjectEntry[
       && leftProject.iconBackground === rightProject.iconBackground
       && leftProject.defaultModel === rightProject.defaultModel
       && leftProject.defaultVariant === rightProject.defaultVariant
+      && leftProject.defaultAgent === rightProject.defaultAgent
       && leftProject.addedAt === rightProject.addedAt
       && leftProject.lastOpenedAt === rightProject.lastOpenedAt
       && leftProject.sidebarCollapsed === rightProject.sidebarCollapsed
@@ -822,6 +839,7 @@ export const useProjectsStore = create<ProjectsStore>()(
       iconBackground?: string | null;
       defaultModel?: string | null;
       defaultVariant?: string | null;
+      defaultAgent?: string | null;
     }) => {
       if (isVSCodeProjectsRuntime) {
         return;
@@ -853,6 +871,14 @@ export const useProjectsStore = create<ProjectsStore>()(
             updated.defaultVariant = trimmed;
           } else {
             delete updated.defaultVariant;
+          }
+        }
+        if (meta.defaultAgent !== undefined) {
+          const normalized = normalizeDefaultAgent(meta.defaultAgent);
+          if (normalized) {
+            updated.defaultAgent = normalized;
+          } else {
+            delete updated.defaultAgent;
           }
         }
         // A variant without its model is meaningless, and the model may have

@@ -122,6 +122,22 @@ describe('settings normalization runtime - symlink resolution', () => {
       expect(result[1].defaultVariant).toBe(undefined);
     });
 
+    it('keeps a default agent and drops empty values', () => {
+      const runtime = createTestRuntime({
+        realpathSync: (p) => p,
+        path: { resolve: (p) => p, sep: '/', dirname: (p) => p.split('/').slice(0, -1).join('/') || '/' },
+      });
+
+      const projects = [
+        { id: 'proj1', path: '/a', defaultAgent: 'reviewer' },
+        { id: 'proj2', path: '/b', defaultAgent: '   ' },
+      ];
+
+      const result = runtime.sanitizeProjects(projects);
+      expect(result[0].defaultAgent).toBe('reviewer');
+      expect(result[1].defaultAgent).toBe(undefined);
+    });
+
     it('deduplicates projects that resolve to the same realpath', () => {
       const runtime = createTestRuntime({
         realpathSync: (p) => p.startsWith('/symlink') ? '/real/project' : p,

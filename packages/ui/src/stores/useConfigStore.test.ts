@@ -828,6 +828,50 @@ describe('useConfigStore provider persistence', () => {
     expect(state.currentVariant).toBe('high');
   });
 
+  test('a project default agent wins over the settings default agent', () => {
+    useConfigStore.setState({
+      activeDirectoryKey: DIRECTORY,
+      providers: [provider('openai', 'gpt-5.5')],
+      agents: [testAgent('build'), testAgent('reviewer')],
+      currentProviderId: '',
+      currentModelId: '',
+      currentAgentName: undefined,
+      settingsDefaultAgent: 'build',
+      settingsDefaultModel: undefined,
+      settingsDefaultVariant: undefined,
+      selectionSource: 'auto',
+      directoryScoped: {},
+    });
+
+    useConfigStore.getState().applyDefaultModelAgentSelection({
+      projectDefaultAgent: 'reviewer',
+    });
+
+    expect(useConfigStore.getState().currentAgentName).toBe('reviewer');
+  });
+
+  test('an unknown project default agent falls back to the settings default agent', () => {
+    useConfigStore.setState({
+      activeDirectoryKey: DIRECTORY,
+      providers: [provider('openai', 'gpt-5.5')],
+      agents: [testAgent('build'), testAgent('reviewer')],
+      currentProviderId: '',
+      currentModelId: '',
+      currentAgentName: undefined,
+      settingsDefaultAgent: 'build',
+      settingsDefaultModel: undefined,
+      settingsDefaultVariant: undefined,
+      selectionSource: 'auto',
+      directoryScoped: {},
+    });
+
+    useConfigStore.getState().applyDefaultModelAgentSelection({
+      projectDefaultAgent: 'ghost-agent',
+    });
+
+    expect(useConfigStore.getState().currentAgentName).toBe('build');
+  });
+
   test('a fresh session applies the settings thinking level instead of the previous override', () => {
     useConfigStore.setState({
       activeDirectoryKey: DIRECTORY,
