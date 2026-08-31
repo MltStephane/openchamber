@@ -424,6 +424,16 @@ const sanitizeProjects = (value: unknown): DesktopSettings['projects'] | undefin
     if (typeof candidate.color === 'string' && candidate.color.trim().length > 0) {
       project.color = candidate.color.trim();
     }
+    if (typeof candidate.defaultModel === 'string' && candidate.defaultModel.includes('/')) {
+      project.defaultModel = candidate.defaultModel.trim();
+      // A variant only means something next to the model it belongs to.
+      if (typeof candidate.defaultVariant === 'string' && candidate.defaultVariant.trim().length > 0) {
+        project.defaultVariant = candidate.defaultVariant.trim();
+      }
+    }
+    if (typeof candidate.defaultAgent === 'string' && candidate.defaultAgent.trim().length > 0) {
+      project.defaultAgent = candidate.defaultAgent.trim();
+    }
     if (candidate.iconBackground === null) {
       project.iconBackground = null;
     } else {
