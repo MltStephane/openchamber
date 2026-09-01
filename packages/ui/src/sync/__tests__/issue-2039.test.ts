@@ -25,6 +25,9 @@ const projectsState = {
     defaultVariant?: string | null
   }>,
   activeProjectId: null as string | null,
+  setActiveProjectIdOnly: (projectId: string | null) => {
+    projectsState.activeProjectId = projectId
+  },
   getActiveProject: () => null as {
     id: string
     path: string
@@ -389,6 +392,9 @@ describe("issue 2039 draft auto-accept", () => {
     createdSessionDirectory = undefined
     projectsState.projects = []
     projectsState.activeProjectId = null
+    projectsState.setActiveProjectIdOnly = (projectId: string | null) => {
+      projectsState.activeProjectId = projectId
+    }
     projectsState.getActiveProject = () => null
 
     useSessionUIStore.setState({
@@ -508,6 +514,54 @@ describe("issue 2039 draft auto-accept", () => {
       projectDefaultAgent: "agent-project",
       projectDefaultModel: "model-project",
       projectDefaultVariant: "variant-project",
+    }])
+  })
+
+  test("reapplies global defaults when opening a fresh no-project draft", async () => {
+    useSessionUIStore.getState().openNewSessionDraft()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(activateDirectoryCalls).toEqual([null])
+    expect(applyDefaultModelAgentSelectionCalls).toEqual([{
+      projectDefaultAgent: undefined,
+      projectDefaultModel: undefined,
+      projectDefaultVariant: undefined,
+    }])
+  })
+
+  test("reapplies the default agent after a project session when the next draft has no project", async () => {
+    const project = {
+      id: "project-1",
+      path: "/repo",
+      defaultAgent: "agent-project",
+      defaultModel: "model-project",
+      defaultVariant: "variant-project",
+    }
+    projectsState.projects = [project]
+
+    useSessionUIStore.getState().openNewSessionDraft({
+      target: "project",
+      selectedProjectId: project.id,
+      directoryOverride: project.path,
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await materializeOpenDraftSession({
+      providerID: "provider",
+      modelID: "model",
+      agent: "agent-project",
+    })
+
+    applyDefaultModelAgentSelectionCalls.length = 0
+    activateDirectoryCalls.length = 0
+
+    useSessionUIStore.getState().openNewSessionDraft()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(activateDirectoryCalls).toEqual([null])
+    expect(applyDefaultModelAgentSelectionCalls).toEqual([{
+      projectDefaultAgent: undefined,
+      projectDefaultModel: undefined,
+      projectDefaultVariant: undefined,
     }])
   })
 
