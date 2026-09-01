@@ -1196,13 +1196,31 @@ export const useSessionUIStore = create<SessionUIState>()((set, get) => ({
     // the project's config instead so the default cascade matches app startup, then re-apply it
     // (a fresh draft must start from defaults, not inherit the previous session's selection).
     const configDirectory = normalizePath(selectedProject?.path ?? null) ?? directory
-    void activateConfigForDirectory(configDirectory).then(() => {
+    const applyProjectDefaults = () => {
       useConfigStore.getState().applyDefaultModelAgentSelection({
         projectDefaultModel: selectedProject?.defaultModel,
         projectDefaultVariant: selectedProject?.defaultVariant,
         projectDefaultAgent: selectedProject?.defaultAgent,
       })
-    })
+    }
+
+    // When the project's config is already active, apply its defaults before
+    // the draft is shown so the first new-chat opens with the project
+    // agent/model instead of the previous (global) selection. The async
+    // re-apply after activation covers the not-yet-active case (first access
+    // to the project, or coming from a worktree whose config is scoped to the
+    // worktree path).
+    const configState = useConfigStore.getState()
+    if (
+      configDirectory
+      && configState.activeDirectoryKey === configDirectory
+      && configState.agents.length > 0
+      && configState.providers.length > 0
+    ) {
+      applyProjectDefaults()
+    }
+
+    void activateConfigForDirectory(configDirectory).then(applyProjectDefaults)
 
     if (directory && directory !== useDirectoryStore.getState().currentDirectory) {
       useDirectoryStore.getState().setDirectory(directory)
