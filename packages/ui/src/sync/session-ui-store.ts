@@ -566,6 +566,40 @@ const activateConfigForDirectory = async (directory: string | null | undefined):
   await useConfigStore.getState().activateDirectory(normalizePath(directory))
 }
 
+const applyDraftTargetProjectDefaults = (
+  draft: Pick<NewSessionDraftState, "target" | "selectedProjectId" | "directoryOverride">,
+  availableWorktreesByProject: Map<string, WorktreeMetadata[]>,
+  selectedProjectOverride?: {
+    path?: string | null
+    defaultAgent?: string | null
+    defaultModel?: string | null
+    defaultVariant?: string | null
+  } | null,
+): void => {
+  if (draft.target !== "project") return
+
+  const projects = useProjectsStore.getState().projects
+  const selectedProject = selectedProjectOverride
+    ?? (draft.selectedProjectId
+      ? projects.find((project) => project.id === draft.selectedProjectId) ?? null
+      : resolveDraftProjectForDirectory(
+        projects,
+        availableWorktreesByProject,
+        normalizePath(draft.directoryOverride ?? null),
+      ))
+
+  const configDirectory = normalizePath(selectedProject?.path ?? null)
+    ?? normalizePath(draft.directoryOverride ?? null)
+
+  void activateConfigForDirectory(configDirectory).then(() => {
+    useConfigStore.getState().applyDefaultModelAgentSelection({
+      projectDefaultAgent: selectedProject?.defaultAgent ?? undefined,
+      projectDefaultModel: selectedProject?.defaultModel ?? undefined,
+      projectDefaultVariant: selectedProject?.defaultVariant ?? undefined,
+    })
+  })
+}
+
 const DEFAULT_DRAFT: NewSessionDraftState = {
   draftId: 0,
   open: false,
@@ -1195,14 +1229,7 @@ export const useSessionUIStore = create<SessionUIState>()((set, get) => ({
     // — resolving defaults against it would wrongly fall back to opencode/big-pickle. Activate
     // the project's config instead so the default cascade matches app startup, then re-apply it
     // (a fresh draft must start from defaults, not inherit the previous session's selection).
-    const configDirectory = normalizePath(selectedProject?.path ?? null) ?? directory
-    void activateConfigForDirectory(configDirectory).then(() => {
-      useConfigStore.getState().applyDefaultModelAgentSelection({
-        projectDefaultAgent: selectedProject?.defaultAgent,
-        projectDefaultModel: selectedProject?.defaultModel,
-        projectDefaultVariant: selectedProject?.defaultVariant,
-      })
-    })
+    applyDraftTargetProjectDefaults(nextDraft, availableWorktreesByProject, selectedProject)
 
     if (directory && directory !== useDirectoryStore.getState().currentDirectory) {
       useDirectoryStore.getState().setDirectory(directory)
@@ -1306,7 +1333,7 @@ export const useSessionUIStore = create<SessionUIState>()((set, get) => ({
         },
       }
     })
-    void activateConfigForDirectory(nextDirectory)
+    applyDraftTargetProjectDefaults(get().newSessionDraft, get().availableWorktreesByProject)
 
     if (nextDirectory && nextDirectory !== useDirectoryStore.getState().currentDirectory) {
       useDirectoryStore.getState().setDirectory(nextDirectory)
@@ -1450,7 +1477,7 @@ export const useSessionUIStore = create<SessionUIState>()((set, get) => ({
       )
       return { newSessionDraft: nextDraft }
     })
-    void activateConfigForDirectory(nextDirectory)
+    applyDraftTargetProjectDefaults(get().newSessionDraft, get().availableWorktreesByProject)
 
     if (nextDirectory && nextDirectory !== useDirectoryStore.getState().currentDirectory) {
       useDirectoryStore.getState().setDirectory(nextDirectory)
